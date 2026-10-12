@@ -22,13 +22,25 @@ def rule4_edges(target, input_path):
 
     Starter returns a no-op so the pipeline still runs before you implement it.
     Parity with rules.py rule dict: rule/name/fired/score/out_of/note/metric.
+    
+    Weaknesses identified:
+      1. Metadata has too strong of an impact on matching; nonmatching metadata should not cause a 30 point loss.
+        -> Reduce to 15 points.
+      2. Rule 4 still does not have enough space to impact score.
+        -> Reduce Template rule from 40 to 30 points.
     """
-    return {
+    out = {
         "rule": 4,
         "name": "Edges",
         "fired": False,
         "score": 0,
-        "out_of": 10,
+        "out_of": 25,
         "note": "Not implemented",
         "metric": 0.0,
-    }
+      }
+    
+    try:
+
+
+
+    return out

@@ -79,7 +79,7 @@ def _size(path):
 def rule1_metadata(target, input_path):
     """File size + dimensions. Compression and crops leave size fingerprints."""
     out = {"rule": 1, "name": "Metadata", "fired": False, "score": 0,
-           "out_of": 30, "note": "Size ratio 0.00", "metric": 0.0}
+           "out_of": 15, "note": "Size ratio 0.00", "metric": 0.0}
     try:
         src_size = os.path.getsize(target["path"])
         in_size = os.path.getsize(input_path)
@@ -125,7 +125,7 @@ def rule3_template(target, input_path):
     that becomes Rule 4 territory.
     """
     out = {"rule": 3, "name": "Template", "fired": False, "score": 0,
-           "out_of": 40, "note": "Match score 0.00", "metric": 0.0}
+           "out_of": 30, "note": "Match score 0.00", "metric": 0.0}
     try:
         src_g = _gray(target["path"])
         nd_g = _gray(input_path)
