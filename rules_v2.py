@@ -12,31 +12,47 @@ Rule 4 -> 10 (or trim the losers more aggressively).
 """
 
 from PIL import Image
+import imagehash
 import rules
 
 #: Import the original rules and append your new one.
 RULES = rules.RULES + ("rule4_edges",)
 
+import time
 
-def _histImg(img):
-    if img is None:
-        return None
+def _phash(target, input_path):
+  bestMatch = 0.0
+  with Image.open(target["path"]) as t:
+    ti = t.convert("RGB")
+    th = imagehash.phash(ti)
+  
+  with Image.open(input_path) as i:
+    ii = i.convert("RGB")
 
-    if img.ndim == 2:
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-    elif img.shape[2] == 4:
-        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+  # Try different crop sizes
+  for crop in (1.0, 0.9, 0.8, 0.7, 0.6, 0.5):
+    cropw = int(ii.width * crop)
+    croph = int(ii.height * crop)
 
-    hists = [
-        cv2.calcHist([img], [i], None, [32], [0, 256])
-        for i in range(3)
-    ]
+    # Slide crops
+    sx = max(1, cropw)
+    sy = max(1, croph)
+    xs = list(range(0, ii.width - cropw + 1, sx))
+    ys = list(range(0, ii.height - croph + 1, sy))
 
-    hist_all = np.concatenate(hists).ravel().astype(np.float32)
-    cv2.normalize(hist_all, hist_all)
-    return hist_all
-
-
+    if not xs or xs[-1] != ii.width - cropw:
+      xs.append(ii.width - cropw)
+    if not ys or ys[-1] != ii.height - croph:
+      ys.append(ii.height - croph)
+    
+    for x in xs:
+      for y in ys:
+        c = ii.crop((x, y, x+cropw, y+croph))
+        tryhash = imagehash.phash(c)
+        d = th - tryhash
+        similarity = 1.0 - d / 64.0
+        bestMatch = max(bestMatch, similarity)
+  return bestMatch
 
 def rule4_edges(target, input_path):
     """TODO: replace with your Phase 2 rule that fixes the V1 weakness.
@@ -53,9 +69,9 @@ def rule4_edges(target, input_path):
         -> Reduction of metadata score will on its own partially fix this.
         -> Implement rule 4 to catch these issues.
         -> Research suggests phash may help with this.
-          - Compress the original image and convert to grayscale.
-          - Apply Discrete Cosine Transform
-          - Compare averages and fire if they are close enough.
+          - Try different crops of the target.
+          - Compare phashes and match with the best crop.
+          - Fire based on best phash match.
     """
     out = {
         "rule": 4,
@@ -63,49 +79,12 @@ def rule4_edges(target, input_path):
         "fired": False,
         "score": 0,
         "out_of": 25,
-        "note": "Compressed and grayscale histograms.",
+        "note": "PHash Similarity",
         "metric": 0.0,
       }
-    
-    try:
-      # Compress the original image
-      t = Image.open(target)
-      b = BytesIO()
-      t.save(b, format="JPEG", optimize=True, quality=40)
-      b.seek(0)
-        
-      # Convert both images to grayscale
-      t = Image.open(io.BytesIO(b))
-      tg = t.convert('L')
-      tb = io.BytesIO()
-      tg.save(tb, format='JPEG')
-      tb.seek(0)
-      compressedTarget = Image.open(tb)
-
-      i = Image.open(input_path)
-      ig = i.convert('L')
-      ib = io.BytesIO()
-      i.save(ib, format="JPEG")
-      compressedInput = Image.open(ib)
-
-      # Re-apply histogram
-      try:
-        hs, hi = _histImg(compressedTarget), _histImg(compressedInput)
-        if hs is None or hi is None:
-            return out
-        corr = float(cv2.compareHist(hs, hi, cv2.HISTCMP_CORREL))
-        out["metric"] = round(max(0.0, min(1.0, corr)), 3)
-        out["note"] = f"Correlation {out['metric']:.2f}"
-        if out["metric"] >= 0.05:
-            out["fired"] = True
-            out["score"] = int(round(out["out_of"] * out["metric"]))
-      except Exception:
-        pass
-    except Exception:
-      pass  
-    return out
-
-
-
-
+    similarity = _phash(target, input_path)
+    out["metric"] = round(similarity, 3)
+    if similarity >= 0.5:
+      out["fired"] = True
+      out["score"] = int(round(out["out_of"] * similarity))
     return out
