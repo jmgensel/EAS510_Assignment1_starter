@@ -20,8 +20,11 @@ RULES = rules.RULES + ("rule4_edges",)
 
 import time
 
+# Guidance for this function sourced from:
+# https://mojoauth.com/security-guides/phash-in-python
 def _phash(target, input_path):
   bestMatch = 0.0
+  start = time.time()
   with Image.open(target["path"]) as t:
     ti = t.convert("RGB")
     th = imagehash.phash(ti)
@@ -30,7 +33,7 @@ def _phash(target, input_path):
     ii = i.convert("RGB")
 
   # Try different crop sizes
-  for crop in (1.0, 0.9, 0.8, 0.7, 0.6, 0.5):
+  for crop in (1.0, 0.75, 0.5):
     cropw = int(ii.width * crop)
     croph = int(ii.height * crop)
 
@@ -52,6 +55,7 @@ def _phash(target, input_path):
         d = th - tryhash
         similarity = 1.0 - d / 64.0
         bestMatch = max(bestMatch, similarity)
+  print("Time for image: " + str(time.time()-start))
   return bestMatch
 
 def rule4_edges(target, input_path):
@@ -78,13 +82,13 @@ def rule4_edges(target, input_path):
         "name": "PHash",
         "fired": False,
         "score": 0,
-        "out_of": 25,
+        "out_of": 40,
         "note": "PHash Similarity",
         "metric": 0.0,
       }
     similarity = _phash(target, input_path)
     out["metric"] = round(similarity, 3)
-    if similarity >= 0.5:
+    if similarity >= 0.8:
       out["fired"] = True
       out["score"] = int(round(out["out_of"] * similarity))
     return out
