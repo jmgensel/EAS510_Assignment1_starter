@@ -85,7 +85,7 @@ def rule4_edges(target, input_path):
     similarity = _phash(target, input_path)
     out["metric"] = round(similarity, 3)
     out["note"] = "PHash Similarity " + str(round(similarity, 3))
-    if similarity >= 0.5:
+    if similarity >= 0.6:
       out["fired"] = True
       out["score"] = min(int(round(out["out_of"] * (similarity * 1.1))), out["out_of"])
     return out
