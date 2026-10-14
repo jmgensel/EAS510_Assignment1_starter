@@ -29,6 +29,7 @@ from functools import lru_cache
 import numpy as np
 import cv2
 from PIL import Image
+import time
 
 #: Rule names used by SimpleDetector.evaluate() (V1).
 RULES = ("rule1_metadata", "rule2_histogram", "rule3_template")

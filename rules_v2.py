@@ -19,43 +19,39 @@ import rules
 RULES = rules.RULES + ("rule4_edges",)
 
 import time
+originalHashes = {}
 
 # Guidance for this function sourced from:
 # https://mojoauth.com/security-guides/phash-in-python
 def _phash(target, input_path):
   bestMatch = 0.0
   start = time.time()
-  with Image.open(target["path"]) as t:
-    ti = t.convert("RGB")
-    th = imagehash.phash(ti)
+  if not (str(target["path"]) in originalHashes):
+    with Image.open(target["path"]) as t:
+      ti = t.convert("RGB")
+      th = imagehash.phash(ti)
+      originalHashes[str(target["path"])] = th
+  else:
+    th = originalHashes[str(target["path"])]
   
   with Image.open(input_path) as i:
     ii = i.convert("RGB")
+    ii.thumbnail((512, 512))
 
   # Try different crop sizes
-  for crop in (1.0, 0.75, 0.5):
+  for crop in (1.0, 0.9, 0.8, 0.7):
     cropw = int(ii.width * crop)
     croph = int(ii.height * crop)
 
-    # Slide crops
-    sx = max(1, cropw)
-    sy = max(1, croph)
-    xs = list(range(0, ii.width - cropw + 1, sx))
-    ys = list(range(0, ii.height - croph + 1, sy))
+    x = (ii.width - cropw) // 2
+    y = (ii.height - croph) // 2
 
-    if not xs or xs[-1] != ii.width - cropw:
-      xs.append(ii.width - cropw)
-    if not ys or ys[-1] != ii.height - croph:
-      ys.append(ii.height - croph)
-    
-    for x in xs:
-      for y in ys:
-        c = ii.crop((x, y, x+cropw, y+croph))
-        tryhash = imagehash.phash(c)
-        d = th - tryhash
-        similarity = 1.0 - d / 64.0
-        bestMatch = max(bestMatch, similarity)
-  print("Time for image: " + str(time.time()-start))
+    c = ii.crop((x, y, x + cropw, y + croph))
+    tryhash = imagehash.phash(c)
+
+    similarity = 1.0 - (th - tryhash) / 64.0
+    bestMatch = max(bestMatch, similarity)
+  print("Time for image phash: " + str(time.time()-start))
   return bestMatch
 
 def rule4_edges(target, input_path):
@@ -88,7 +84,8 @@ def rule4_edges(target, input_path):
       }
     similarity = _phash(target, input_path)
     out["metric"] = round(similarity, 3)
-    if similarity >= 0.8:
+    out["note"] = "PHash Similarity " + str(round(similarity, 3))
+    if similarity >= 0.5:
       out["fired"] = True
-      out["score"] = int(round(out["out_of"] * similarity))
+      out["score"] = min(int(round(out["out_of"] * (similarity * 1.1))), out["out_of"])
     return out
