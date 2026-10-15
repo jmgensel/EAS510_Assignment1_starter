@@ -108,11 +108,13 @@ One of the last changes I made was to reduce the images to a 512x512 thumbnail t
 Easy results (found in easy_v1.txt, easy_v2.txt):
 - V1: 38/60 matched
 - V2: 39/60 matched 
+
 With V2, two previously matched images were rejected, and three previously rejected images were matched
 
 Hard Results (found in hard_v1.txt, hard_v2.txt):
 - V1: 33/60 matched
 - V2: 36/60 matched
+
 With V2, four previously matched images were rejected, and seven previously rejected images were matched
 
 Random Results (found in random_v1.txt, random_v2.txt):
