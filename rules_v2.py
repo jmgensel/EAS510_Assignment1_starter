@@ -25,7 +25,7 @@ originalHashes = {}
 # https://mojoauth.com/security-guides/phash-in-python
 def _phash(target, input_path):
   bestMatch = 0.0
-  start = time.time()
+  # start = time.time()
   if not (str(target["path"]) in originalHashes):
     with Image.open(target["path"]) as t:
       ti = t.convert("RGB")
@@ -51,7 +51,7 @@ def _phash(target, input_path):
 
     similarity = 1.0 - (th - tryhash) / 64.0
     bestMatch = max(bestMatch, similarity)
-  print("Time for image phash: " + str(time.time()-start))
+  # print("Time for image phash: " + str(time.time()-start))
   return bestMatch
 
 def rule4_edges(target, input_path):
